@@ -20,7 +20,6 @@ app.use(cors({
 }))
 
 app.use('/api/v1/auth', authRouter)
-app.use('/api/v1/', authRouter)
 
 app.use('/', (req, res) => {
     res.status(200).json({

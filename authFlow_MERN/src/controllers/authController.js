@@ -33,6 +33,7 @@ const loginController = asyncCatch(async (req, res) => {
         message: "User login successfully",
         data: {
             id: existUser._id,
+            role: existUser.role,
             email: existUser.email,
             accessToken
         }
@@ -61,7 +62,7 @@ const logoutController = asyncCatch(async (req, res) => {
 
     // console.log(res.__proto__.__proto__, "...res API");
 
-    res.clearCookie("refresh", {
+    res.clearCookie("refreshToken", {
         httpOnly: true,
         sameSite: "strict",
         secure: false
@@ -73,9 +74,21 @@ const logoutController = asyncCatch(async (req, res) => {
     })
 })
 
+const adminController = asyncCatch(async (req, res) => {
+
+    // console.log(req, "...req");
+
+
+    res.status(200).json({
+        success: true,
+        message: "Welcome to admin Dashboard"
+    })
+})
+
 module.exports = {
     signupController,
     loginController,
     refreshController,
-    logoutController
+    logoutController,
+    adminController
 }

@@ -5,12 +5,11 @@ const jwt = require('jsonwebtoken');
 const protectedMiddleware = asyncCatch(async (req, res, next) => {
     console.log("I am in protected middleware");
 
-
     // console.log(req.headers.authorization.split(" "), "...token");
 
     const authHeaders = req.headers.authorization;
 
-    if (!authHeaders) {
+    if (!authHeaders || !authHeaders.startsWith('Bearer')) {
         throw new AppError(401, "Unauthorized: token missing")
     }
 
@@ -25,7 +24,7 @@ const protectedMiddleware = asyncCatch(async (req, res, next) => {
         throw new AppError(401, "Invalid token, Please Enter valid token")
     }
 
-    req.user = decodedPayload;
+    req.user = decodedPayload;      // imp for role based authorisation 
 
     next()
 
