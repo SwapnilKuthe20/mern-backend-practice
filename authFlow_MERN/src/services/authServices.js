@@ -37,6 +37,9 @@ const loginServices = async ({ email, password }) => {
         throw new AppError(400, "Email is not registered")
     }
 
+    // console.log(existUser, "...exist user");
+
+
     const comparePass = await existUser.comparePass(password);
     // console.log(comparePass, "...comapre pass");
 
@@ -49,6 +52,10 @@ const loginServices = async ({ email, password }) => {
 
     // console.log(accessToken, "...accessToken");
     // console.log(refreshToken, "...refreshToken");
+
+    // refresh token save to DB ::
+    existUser.refreshToken = refreshToken;
+    await existUser.save()
 
     return {
         existUser,
@@ -64,14 +71,30 @@ const refreshServices = async (req) => {
         throw new AppError(401, "Authorisation Error : Token Missing")
     }
 
+    // 1️⃣ Verify token
     const decodedPayload = jwt.verify(refreshToken, process.env.REFRESH_SECRET)
     // console.log(decodedPayload, "...decode payload refresh");
 
-    const newAccessToken = generateAccessToken({ id: decodedPayload._id, role: decodedPayload.role })
+    // 2️⃣ Find user + match refresh token
+    const user = await userModel.findById(decodedPayload.id).select("+refreshToken");
+    // console.log(user, "...user after find to match refresh toekn");
+
+    if (!user || !user.refreshToken !== refreshToken) {
+        throw new AppError(403, "Invalid Refresh Token");
+    }
+
+    // 3️⃣ ROTATE TOKENS
+    const newAccessToken = generateAccessToken({ id: user._id, role: user.role })
+    const newRefreshToken = generateRefreshToken({ id: user._id, role: user.role })
+
+    // 4️⃣ SAVE NEW REFRESH TOKEN
+    user.refreshToken = newRefreshToken;
+    await user.save();
 
     return {
         user: decodedPayload,
-        newAccessToken
+        newAccessToken,
+        newRefreshToken
     }
 
 }

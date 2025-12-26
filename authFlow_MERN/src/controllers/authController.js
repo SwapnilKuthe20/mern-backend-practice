@@ -1,3 +1,4 @@
+const userModel = require("../models/userModel");
 const { signupServices, loginServices, refreshServices } = require("../services/authServices")
 const asyncCatch = require("../utils/asyncCatch")
 
@@ -44,7 +45,14 @@ const loginController = asyncCatch(async (req, res) => {
 const refreshController = asyncCatch(async (req, res) => {
     // console.log(req.cookies.refreshToken, "...req");
 
-    const { user, newAccessToken } = await refreshServices(req)
+    const { user, newAccessToken, newRefreshToken } = await refreshServices(req);
+
+    res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: false,
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    })
 
     return res.status(200).json({
         success: true,
@@ -61,6 +69,17 @@ const refreshController = asyncCatch(async (req, res) => {
 const logoutController = asyncCatch(async (req, res) => {
 
     // console.log(res.__proto__.__proto__, "...res API");
+
+    const refreshToken = req.cookies.refreshToken;
+
+    if (refreshToken) {
+        const user = await userModel.findById(refreshToken).select("+refreshToken");
+
+        if (user) {
+            user.refreshToken = null;
+            await user.save();
+        }
+    }
 
     res.clearCookie("refreshToken", {
         httpOnly: true,
