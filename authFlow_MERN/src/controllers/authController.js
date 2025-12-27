@@ -73,10 +73,15 @@ const logoutController = asyncCatch(async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
 
     if (refreshToken) {
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+
         const user = await userModel.findById(refreshToken).select("+refreshToken");
 
         if (user) {
-            user.refreshToken = null;
+            user.refreshToken = user.refreshToken.filter(
+                rt => rt.token !== refreshToken
+            );
+
             await user.save();
         }
     }

@@ -6,10 +6,7 @@ const crypto = require('crypto')
 
 // browser / OS / IP Info::
 const UAParser = require("ua-parser-js");
-
-const ua = req.headers["user-agent"] || "unknown";
-const parser = new UAParser(ua);
-const result = parser.getResult();
+// console.log(UAParser, "... ua-parser");
 
 const signupServices = async ({ name, email, password }) => {
 
@@ -36,7 +33,17 @@ const signupServices = async ({ name, email, password }) => {
 
 const loginServices = async (req) => {
 
-    console.log(req.headers["user-agent"], "....req login user agent");
+    // console.log(req.headers["user-agent"], "....req login user agent");
+    // console.log(req.ip, "....req ip address");
+
+    const ua = req.headers["user-agent"] || "unknown";
+    // console.log(ua, "...user agent");
+
+    const parser = new UAParser(ua);
+    // console.log(parser, "...parser");
+
+    const result = parser.getResult();
+    // console.log(result, "...result");
 
     const { email, password } = req.body;
 
@@ -59,7 +66,7 @@ const loginServices = async (req) => {
     }
 
     const deviceId = crypto.randomUUID()
-    console.log(deviceId, "...deviceId");
+    // console.log(deviceId, "...deviceId");
 
     const accessToken = generateAccessToken({ id: existUser._id, role: existUser.role });
     const refreshToken = generateRefreshToken({ id: existUser._id, role: existUser.role });
@@ -99,22 +106,33 @@ const loginServices = async (req) => {
 
 const refreshServices = async (req) => {
 
-    const refreshToken = req.cookies.refreshToken;
-    console.log(refreshToken, "...refresh token header");
+    const oldRefreshToken = req.cookies.refreshToken;
+    // console.log(oldRefreshToken, "...old refresh token header");
 
-    if (!refreshToken) {
+    if (!oldRefreshToken) {
         throw new AppError(401, "Authorisation Error : Token Missing")
     }
 
     // 1️⃣ Verify token
-    const decodedPayload = jwt.verify(refreshToken, process.env.REFRESH_SECRET)
+    const decodedPayload = jwt.verify(oldRefreshToken, process.env.REFRESH_SECRET)
     // console.log(decodedPayload, "...decode payload refresh");
 
     // 2️⃣ Find user + match refresh token
     const user = await userModel.findById(decodedPayload.id).select("+refreshToken");
-    console.log(user, "...user after find to match refresh toekn");
+    // console.log(user, "...user after find to match refresh toekn");
 
-    if (!user || user.refreshToken !== refreshToken) {
+    if (!user) throw new AppError(403, "User not found");
+
+    // if (user.refreshToken.token !== oldRefreshToken) {
+    //     throw new AppError(403, "Invalid Refresh Token Or Session expired, login again");
+    // }
+
+    const session = user.refreshToken.find(
+        rt => rt.token === oldRefreshToken
+    );
+    console.log(session, "...session");
+
+    if (!session) {
         throw new AppError(403, "Invalid Refresh Token Or Session expired, login again");
     }
 
@@ -123,7 +141,26 @@ const refreshServices = async (req) => {
     const newRefreshToken = generateRefreshToken({ id: user._id, role: user.role })
 
     // 4️⃣ SAVE NEW REFRESH TOKEN
-    user.refreshToken = newRefreshToken;
+    // user.refreshToken = newRefreshToken;     // in single refreshToken
+
+    // ❌ remove old session
+    user.refreshToken = user.refreshToken.filter(
+        rt => rt.token !== oldRefreshToken
+    );
+
+    // Agar schema me refreshToken default [] nahi hai, to:
+    if (!existUser.refreshToken) {
+        existUser.refreshToken = [];
+    }
+
+    // ✅ add rotated session (same metadata)
+    user.refreshToken.push({
+        token: newRefreshToken,
+        device: session.device,
+        createdAt: session.createdAt,
+        lastUsedAt: new Date()
+    });
+
     await user.save();
 
     return {
