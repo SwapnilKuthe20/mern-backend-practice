@@ -20,7 +20,7 @@ const signupController = asyncCatch(async (req, res) => {
 
 const loginController = asyncCatch(async (req, res) => {
 
-    const { existUser, accessToken, refreshToken } = await loginServices(req.body);
+    const { existUser, accessToken, refreshToken } = await loginServices(req);
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,

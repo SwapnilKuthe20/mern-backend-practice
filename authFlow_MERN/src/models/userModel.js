@@ -29,10 +29,29 @@ const userSchema = new mongoose.Schema({
         enum: Object.values(ROLES),
         default: ROLES.USER
     },
-    refreshToken: {
-        type: String,
-        select: false
-    }
+    refreshToken: [             //  // 🔥 SESSION STORE (FULL METADATA)
+        {
+            token: {
+                type: String,
+                required: true
+            },
+            device: {
+                deviceId: String,
+                browser: String,
+                os: String,
+                ip: String,
+                userAgent: String
+            },
+            createdAt: {
+                type: Date,
+                default: Date.now
+            },
+            lastUsedAt: {
+                type: Date,
+                default: Date.now
+            }
+        }
+    ]
 }, { timestamps: true })
 
 

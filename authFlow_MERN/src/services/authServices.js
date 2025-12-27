@@ -2,6 +2,14 @@ const userModel = require("../models/userModel");
 const { generateAccessToken, generateRefreshToken } = require("../config/generateToken");
 const AppError = require("../utils/AppError");
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
+
+// browser / OS / IP Info::
+const UAParser = require("ua-parser-js");
+
+const ua = req.headers["user-agent"] || "unknown";
+const parser = new UAParser(ua);
+const result = parser.getResult();
 
 const signupServices = async ({ name, email, password }) => {
 
@@ -26,7 +34,11 @@ const signupServices = async ({ name, email, password }) => {
     return user;
 }
 
-const loginServices = async ({ email, password }) => {
+const loginServices = async (req) => {
+
+    console.log(req.headers["user-agent"], "....req login user agent");
+
+    const { email, password } = req.body;
 
     if (!email || !password) {
         throw new AppError(400, "email and Password are compulsory fields")
@@ -36,7 +48,6 @@ const loginServices = async ({ email, password }) => {
     if (!existUser) {
         throw new AppError(400, "Email is not registered")
     }
-
     // console.log(existUser, "...exist user");
 
 
@@ -47,14 +58,36 @@ const loginServices = async ({ email, password }) => {
         throw new AppError(400, "Invalid credentials")
     }
 
+    const deviceId = crypto.randomUUID()
+    console.log(deviceId, "...deviceId");
+
     const accessToken = generateAccessToken({ id: existUser._id, role: existUser.role });
     const refreshToken = generateRefreshToken({ id: existUser._id, role: existUser.role });
 
     // console.log(accessToken, "...accessToken");
     // console.log(refreshToken, "...refreshToken");
 
+    const browserName = result.browser.name || "unknown";
+    const browserVersion = result.browser.version || "";
+    const osName = result.os.name || "unknown";
+    const osVersion = result.os.version || "";
+
+    // Multi refreshToken :
+    existUser.refreshToken.push({
+        token: refreshToken,
+        device: {
+            deviceId,
+            browser: `${browserName} ${browserVersion}`.trim(),
+            os: `${osName} ${osVersion}`.trim(),
+            ip: req.ip,
+            userAgent: ua,
+            createdAt: new Date()
+        }
+    })
+
     // refresh token save to DB ::
-    existUser.refreshToken = refreshToken;
+    // existUser.refreshToken = refreshToken;   // single refreshToken
+
     await existUser.save()
 
     return {
