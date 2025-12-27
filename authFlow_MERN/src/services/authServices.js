@@ -67,6 +67,8 @@ const loginServices = async ({ email, password }) => {
 const refreshServices = async (req) => {
 
     const refreshToken = req.cookies.refreshToken;
+    console.log(refreshToken, "...refresh token header");
+
     if (!refreshToken) {
         throw new AppError(401, "Authorisation Error : Token Missing")
     }
@@ -77,10 +79,10 @@ const refreshServices = async (req) => {
 
     // 2️⃣ Find user + match refresh token
     const user = await userModel.findById(decodedPayload.id).select("+refreshToken");
-    // console.log(user, "...user after find to match refresh toekn");
+    console.log(user, "...user after find to match refresh toekn");
 
-    if (!user || !user.refreshToken !== refreshToken) {
-        throw new AppError(403, "Invalid Refresh Token");
+    if (!user || user.refreshToken !== refreshToken) {
+        throw new AppError(403, "Invalid Refresh Token Or Session expired, login again");
     }
 
     // 3️⃣ ROTATE TOKENS
