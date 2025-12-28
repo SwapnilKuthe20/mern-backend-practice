@@ -109,10 +109,45 @@ const adminController = asyncCatch(async (req, res) => {
     })
 })
 
+const logoutAllController = asyncCatch(async (req, res) => {
+
+    /**
+     * req.user comes from protectedMiddleware
+     * req.user.id
+     */
+    // console.log(req.user, "...req user");
+
+    const user = await userModel.findById(req.user.id)
+    // console.log(user, "...user");
+
+    if (!user) {
+        throw new AppError(404, "User not found");
+    }
+
+    // 🔥 KILL ALL SESSIONS
+    user.refreshToken = [];
+
+    await user.save();
+
+    // current device cookie bhi clear
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "strict"
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Logged out from all devices successfully"
+    });
+
+})
+
 module.exports = {
     signupController,
     loginController,
     refreshController,
     logoutController,
-    adminController
+    adminController,
+    logoutAllController
 }
