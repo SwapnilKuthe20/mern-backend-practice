@@ -171,8 +171,49 @@ const refreshServices = async (req) => {
 
 }
 
+const resetPasswordServices = async (req) => {
+
+    const { currentPassword, newPassword, reEnterNewPassword } = req.body;
+
+
+    if (!currentPassword || !newPassword || !reEnterNewPassword) {
+        throw new AppError(400, "All fields are mandatory, Please enter all fields")
+    }
+
+    if (newPassword !== reEnterNewPassword) {
+        throw new AppError(400, "Your passwords does not match,, Please Enter your password again")
+    }
+
+
+
+    const user = await userModel.findById(req.user.id).select("+password +refreshToken")
+    // console.log(user, "...user");
+
+    if (!user) {
+        throw new AppError(404, "User not found")
+    }
+
+    const samePassword = await user.comparePass(newPassword)
+    // console.log(samePassword, "...samePassword");
+
+    if (samePassword) {
+        throw new AppError(400, "New password must be different")
+    }
+
+    user.password = newPassword;
+
+    // 🔥 3️⃣ Logout from ALL devices
+    user.refreshToken = [];
+
+    await user.save();
+
+    return user;
+
+}
+
 module.exports = {
     signupServices,
     loginServices,
-    refreshServices
+    refreshServices,
+    resetPasswordServices
 }

@@ -1,5 +1,5 @@
 const userModel = require("../models/userModel");
-const { signupServices, loginServices, refreshServices } = require("../services/authServices")
+const { signupServices, loginServices, refreshServices, resetPasswordServices } = require("../services/authServices")
 const asyncCatch = require("../utils/asyncCatch")
 
 const signupController = asyncCatch(async (req, res) => {
@@ -143,11 +143,29 @@ const logoutAllController = asyncCatch(async (req, res) => {
 
 })
 
+const resetPasswordController = asyncCatch(async (req, res) => {
+
+    const user = await resetPasswordServices(req);
+
+    return res.status(200).json({
+        success: true,
+        message: "Password changed successfully. Please login again.",
+        data: {
+            id: user._id,
+            email: user.email,
+            name: user.name
+        }
+    });
+
+
+})
+
 module.exports = {
     signupController,
     loginController,
     refreshController,
     logoutController,
     adminController,
-    logoutAllController
+    logoutAllController,
+    resetPasswordController
 }
