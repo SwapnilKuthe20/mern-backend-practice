@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         trim: true,
-        required: true,
+        // required: true,
         select: false,
         minlength: [8, "Password should be 8 characters"]
     },
@@ -52,7 +52,15 @@ const userSchema = new mongoose.Schema({
                 default: Date.now
             }
         }
-    ]
+    ],
+    provider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local"
+    },
+    googleId: {
+        type: String
+    },
 }, { timestamps: true })
 
 

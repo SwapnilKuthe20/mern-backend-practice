@@ -14,4 +14,7 @@ authRouter.get('/admin', protectedMiddleware, roleMiddleware(ROLES.ADMIN), admin
 authRouter.post('/logout-all', protectedMiddleware, logoutAllController)
 authRouter.post('/reset-password', protectedMiddleware, resetPasswordController)
 
+authRouter.post('/google',)
+authRouter.post('/googlee/callback',)
+
 module.exports = authRouter
