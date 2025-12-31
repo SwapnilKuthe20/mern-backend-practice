@@ -1,6 +1,7 @@
 const authRouter = require('express').Router()
 const ROLES = require('../config/roles')
 const { signupController, loginController, refreshController, logoutController, adminController, logoutAllController, resetPasswordController } = require('../controllers/authController')
+const { googleCallbackController, googleRedirectController } = require('../controllers/googleAuthControllers')
 const homeController = require('../controllers/homeController')
 const protectedMiddleware = require('../middlewares/protectedMiddleware')
 const roleMiddleware = require('../middlewares/roleMiddleware')
@@ -14,7 +15,7 @@ authRouter.get('/admin', protectedMiddleware, roleMiddleware(ROLES.ADMIN), admin
 authRouter.post('/logout-all', protectedMiddleware, logoutAllController)
 authRouter.post('/reset-password', protectedMiddleware, resetPasswordController)
 
-authRouter.post('/google',)
-authRouter.post('/googlee/callback',)
+// authRouter.post('/google', googleRedirectController)
+authRouter.post('/google/callback', googleCallbackController)
 
 module.exports = authRouter
